@@ -185,12 +185,11 @@ PID    COMM         IP SADDR            DADDR            DPORT
 2015   ssh          6  fe80::2000:bff:fe82:3ac fe80::2000:bff:fe82:3ac 22
 [...]
 ```
+tcpconnect 为每个活跃的TCP连接（例如， 通过connect()调用）打印一行输出，详情包括源地址和目标地址。
 
-tcpconnect prints one line of output for every active TCP connection (eg, via connect()), with details including source and destination addresses.
+寻找那些可能指向应用程序配置效率低下或入侵者的异常连接。
 
-Look for unexpected connections that may point to inefficiencies in application configuration, or an intruder.
-
-More [examples](../tools/tcpconnect_example.txt).
+更多例子请看 [examples](../tools/tcpconnect_example.txt).
 
 #### 1.8. tcpaccept
 
