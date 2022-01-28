@@ -147,14 +147,11 @@ TIME(s)        COMM           PID    DISK    T  SECTOR    BYTES   LAT(ms)
 [...]
 ```
 
-为每一个磁盘I/O打印一行输出，详情包括延迟（从设备发出到完成的时间）。
+biosnoop 为每一个磁盘I/O打印一行输出，详情包括延迟（从设备发出到完成的时间）。
 
-biosnoop prints a line of output for each disk I/O, with details including latency (time from device issue to completion).
+这个工具允许你详细检查磁盘I/O，并且寻找按时间排序的模式（例如，读取是在写入后面）。注意如果你的系统正在高速执行磁盘I/O那输出将会变得冗长。
 
-这个工具允许你详细检查磁盘I/O，并且寻找按时间排序的模式（例如，读取是在写入后面）。
-This allows you to examine disk I/O in more detail, and look for time-ordered patterns (eg, reads queueing behind writes). Note that the output will be verbose if your system performs disk I/O at a high rate.
-
-More [examples](../tools/biosnoop_example.txt).
+更多例子请看 [examples](../tools/biosnoop_example.txt).
 
 #### 1.6. cachestat
 
@@ -169,12 +166,12 @@ More [examples](../tools/biosnoop_example.txt).
      348        0        0     100.0%       0.0%            1        223
 [...]
 ```
+cachestat 每秒打印一行输出摘要（或者每个自定义时间间隔），显示来自文件系统缓存的统计信息。
 
-cachestat prints a one line summary every second (or every custom interval) showing statistics from the file system cache.
+使用这个工具来识别低缓存命中率和高未命中率：这为性能调优提供了一条线索。
 
-Use this to identify a low cache hit ratio, and a high rate of misses: which gives one lead for performance tuning.
 
-More [examples](../tools/cachestat_example.txt).
+更多例子请看 [examples](../tools/cachestat_example.txt).
 
 #### 1.7. tcpconnect
 
