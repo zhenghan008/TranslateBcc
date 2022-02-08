@@ -201,12 +201,11 @@ PID    COMM         IP RADDR            LADDR            LPORT
 5389   perl         6  1234:ab12:2040:5020:2299:0:5:0 1234:ab12:2040:5020:2299:0:5:0 7001
 [...]
 ```
+tcpaccept 为每个被动的TCP连接（例如， 通过accept()调用）打印一行输出，详情包括源地址和目标地址。
 
-tcpaccept prints one line of output for every passive TCP connection (eg, via accept()), with details including source and destination addresses.
+寻找那些可能指向应用程序配置效率低下或入侵者的异常连接。
 
-Look for unexpected connections that may point to inefficiencies in application configuration, or an intruder.
-
-More [examples](../tools/tcpaccept_example.txt).
+更多例子请看 [examples](../tools/tcpaccept_example.txt).
 
 #### 1.9. tcpretrans
 
@@ -219,11 +218,12 @@ TIME     PID    IP LADDR:LPORT          T> RADDR:RPORT          STATE
 [...]
 ```
 
-tcprerans prints one line of output for every TCP retransmit packet, with details including source and destination addresses, and kernel state of the TCP connection.
+tcprerans 为每个 TCP 重传数据包打印一行输出，详情包括源地址和目标地址，并且包括该TCP连接的内核状态。
 
-TCP retransmissions cause latency and throughput issues. For ESTABLISHED retransmits, look for patterns with networks. For SYN_SENT, this may point to target kernel CPU saturation and kernel packet drops.
+TCP的重传会导致网络延迟和吞吐量的问题。对于ESTABLISHED的重传，可以据此发现网络模式。对于SYN_SENT的重传，这可能指向目标内核CPU的饱和度和发现内核数据包丢失的情况。
 
-More [examples](../tools/tcpretrans_example.txt).
+
+更多例子请看 [examples](../tools/tcpretrans_example.txt).
 
 #### 1.10. runqlat
 
