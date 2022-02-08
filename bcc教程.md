@@ -149,7 +149,7 @@ TIME(s)        COMM           PID    DISK    T  SECTOR    BYTES   LAT(ms)
 
 biosnoop 为每一个磁盘I/O打印一行输出，详情包括延迟（从设备发出到完成的时间）。
 
-这个工具允许你详细检查磁盘I/O，并且寻找按时间排序的模式（例如，读取是在写入后面）。注意如果你的系统正在高速运行磁盘I/O那输出将会变得冗长。
+这个工具允许你详细检查磁盘I/O，并且可以据此发现按时间排序的模式（例如，读取是在写入后面）。注意如果你的系统正在高速运行磁盘I/O那输出将会变得冗长。
 
 更多例子请看 [examples](../tools/biosnoop_example.txt).
 
@@ -187,7 +187,7 @@ PID    COMM         IP SADDR            DADDR            DPORT
 ```
 tcpconnect 为每个活跃的TCP连接（例如， 通过connect()调用）打印一行输出，详情包括源地址和目标地址。
 
-寻找那些可能指向应用程序配置效率低下或入侵者的异常连接。
+可以据此发现那些可能指向应用程序配置效率低下或入侵者的异常连接。
 
 更多例子请看 [examples](../tools/tcpconnect_example.txt).
 
@@ -203,7 +203,7 @@ PID    COMM         IP RADDR            LADDR            LPORT
 ```
 tcpaccept 为每个被动的TCP连接（例如， 通过accept()调用）打印一行输出，详情包括源地址和目标地址。
 
-寻找那些可能指向应用程序配置效率低下或入侵者的异常连接。
+可以据此发现那些可能指向应用程序配置效率低下或入侵者的异常连接。
 
 更多例子请看 [examples](../tools/tcpaccept_example.txt).
 
