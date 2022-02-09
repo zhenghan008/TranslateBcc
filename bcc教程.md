@@ -332,17 +332,8 @@ PID    TID    COMM         FUNC             -
 
 ##### Example 2
 
-Suppose you want to count nonvoluntary context switches (`nvcsw`) in your bpf based performance monitoring tools and you do not know what is the proper method. `/proc/<pid>/status` already tells you the number (`nonvoluntary_ctxt_switches`) for a pid and you can use `trace.py` to do a quick experiment to verify your method. With kernel source code, the `nvcsw` is counted at file `linux/kernel/sched/core.c` function `__schedule` and under condition
-```
-!(!preempt && prev->state) // i.e., preempt || !prev->state
-```
+假设你想要基于bpf性能监控工具去计算非自愿上下文切换(`nvcsw`)而又不知道适当的方法是什么。`/proc/<pid>/status`已经告诉你pid的编号(`nonvoluntary_ctxt_switches`)并且你可以使用`trace.py` 做一个快速的实验来验证你的方法。对于内核源代码，`nvcsw`在`linux/kernel/sched/core.c`文件中的`__schedule`函数和在```!(!preempt && prev->state) // i.e., preempt || !prev->state```条件下计算。`__schedule`函数被标记为 `notrace`，并且评估上述条件的最佳位置似乎是在函数`__schedule`的内部调用并在`linux/include/trace/events/sched.h`中定义的`sched/sched_switch`跟踪点。`trace.py`已经有`args`作为一个指向跟踪点`TP_STRUCT__entry`的指针。函数`__schedule`中的上述条件可以表示为```args->prev_state == TASK_STATE_MAX || args->prev_state == 0```。下面的命令可以用于计算非自愿上下文切换（每个进程或者每个pid）并且比较`/proc/<pid>/status` 或者 `/proc/<pid>/task/<task_id>/status`的正确性，在通常情况下，非自愿上下文切换并不常见。
 
-The `__schedule` function is marked as `notrace`, and the best place to evaluate the above condition seems in `sched/sched_switch` tracepoint called inside function `__schedule` and defined in `linux/include/trace/events/sched.h`. `trace.py` already has `args` being the pointer to the tracepoint `TP_STRUCT__entry`.  The above condition in function `__schedule` can be represented as
-```
-args->prev_state == TASK_STATE_MAX || args->prev_state == 0
-```
-
-The below command can be used to count the involuntary context switches (per process or per pid) and compare to `/proc/<pid>/status` or `/proc/<pid>/task/<task_id>/status` for correctness, as in typical cases, involuntary context switches are not very common.
 ```
 $ trace.py -p 1134138 't:sched:sched_switch (args->prev_state == TASK_STATE_MAX || args->prev_state == 0)'
 PID    TID    COMM         FUNC
@@ -358,7 +349,7 @@ PID    TID    COMM         FUNC
 
 ##### Example 3
 
-This example is related to issue [1231](https://github.com/iovisor/bcc/issues/1231) and [1516](https://github.com/iovisor/bcc/issues/1516) where uprobe does not work at all in certain cases. First, you can do a `strace` as below
+此示例与 uprobe 的问题 [1231](https://github.com/iovisor/bcc/issues/1231) 和 [1516](https://github.com/iovisor/bcc/issues/1516) 相关在某些情况下根本不起作用。首先，你可以做一个 `strace` 如下
 
 ```
 $ strace trace.py 'r:bash:readline "%s", retval'
@@ -367,31 +358,26 @@ perf_event_open(0x7ffd968212f0, -1, 0, -1, 0x8 /* PERF_FLAG_??? */) = -1 EIO (In
 ...
 ```
 
-The `perf_event_open` syscall returns `-EIO`. Digging into kernel uprobe related codes in `/kernel/trace` and `/kernel/events` directories to search `EIO`, the function `uprobe_register` is the most suspicious. Let us find whether this function is called or not and what is the return value if it is called. In one terminal using the following command to print out the return value of uprobe_register,
-```
-$ trace.py 'r::uprobe_register "ret = %d", retval'
-```
-In another terminal run the same bash uretprobe tracing example, and you should get
+`perf_event_open`系统调用返回`-EIO`。在 `/kernel/trace` 和 `/kernel/events`中挖掘内核 uprobe 相关代码以搜索 `EIO`，函数`uprobe_register`是最可疑的。让我们看看这个函数是否被调用并且如果被调用返回值是什么。在一个终端使用以下命令打印出uprobe_register的返回值，```$ trace.py 'r::uprobe_register "ret = %d", retval'```。在另一个终端运行相同的 bash uretprobe 跟踪示例，你应该得到
 ```
 $ trace.py 'r::uprobe_register "ret = %d", retval'
 PID    TID    COMM         FUNC             -
 1041401 1041401 python2.7    uprobe_register  ret = -5
 ```
 
-The `-5` error code is EIO. This confirms that the following code in function `uprobe_register` is the most suspicious culprit.
+那个`-5`的错误代码是EIO。这证实了函数 `uprobe_register` 中的以下代码是最可疑的罪魁祸首
 ```
  if (!inode->i_mapping->a_ops->readpage && !shmem_mapping(inode->i_mapping))
         return -EIO;
 ```
-The `shmem_mapping` function is defined as
+函数`shmem_mapping`定义为
 ```
 bool shmem_mapping(struct address_space *mapping)
 {
         return mapping->a_ops == &shmem_aops;
 }
 ```
-
-To confirm the theory, find what is `inode->i_mapping->a_ops` with the following command
+为了确认这个理论，用下面的命令来查找`inode->i_mapping->a_ops`是什么
 ```
 $ trace.py -I 'linux/fs.h' 'p::uprobe_register(struct inode *inode) "a_ops = %llx", inode->i_mapping->a_ops'
 PID    TID    COMM         FUNC             -
@@ -400,17 +386,17 @@ PID    TID    COMM         FUNC             -
 ffffffff81a2adc0 R empty_aops
 ```
 
-The kernel symbol `empty_aops` does not have `readpage` defined and hence the above suspicious condition is true. Further examining the kernel source code shows that `overlayfs` does not provide its own `a_ops` while some other file systems (e.g., ext4) define their own `a_ops` (e.g., `ext4_da_aops`), and `ext4_da_aops` defines `readpage`. Hence, uprobe works fine on ext4 while not on overlayfs.
+内核符号`empty_aops`没有定义`readpage`因此上述可疑情况为真。进一步检查内核源代码表明，`overlayfs` 不提供自己的`a_ops`，而其他一些文件系统（例如，ext4）定义了自己的`a_ops`（例如，`ext4_da_aops`），而`ext4_da_aops`定义了`readpage `。因此，uprobe在ext4文件系统上可以工作而不能在overlayfs上工作。
 
-More [examples](../tools/trace_example.txt). 
+更多例子请看 [examples](../tools/trace_example.txt). 
 
 #### 2.2. argdist
 
-More [examples](../tools/argdist_example.txt).
+更多例子请看 [examples](../tools/argdist_example.txt).
 
 #### 2.3. funccount
 
-More [examples](../tools/funccount_example.txt).
+更多例子请看 [examples](../tools/funccount_example.txt).
 
 ## Networking
 
