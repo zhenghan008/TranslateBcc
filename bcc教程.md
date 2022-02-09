@@ -249,12 +249,12 @@ Tracing run queue latency... Hit Ctrl-C to end.
      16384 -> 32767      : 809      |****************************************|
      32768 -> 65535      : 64       |***                                     |
 ```
+runqlat 计时线程在CPU运行队列中等待多长时间，并将其打印为直方图。
 
-runqlat times how long threads were waiting on the CPU run queues, and prints this as a histogram.
+这可以帮助量化在CPU饱和期等待开启CPU所损失的时间。
 
-This can help quantify time lost waiting for a turn on CPU, during periods of CPU saturation.
 
-More [examples](../tools/runqlat_example.txt).
+更多例子请看 [examples](../tools/runqlat_example.txt).
 
 #### 1.11. profile
 
@@ -296,28 +296,26 @@ Sampling at 49 Hertz of all threads by user + kernel stack... Hit Ctrl-C to end.
     -                swapper/1 (0)
         75
 ```
+profile是一个CPU分析器，它以定时间隔对堆栈跟踪进行采样，并打印唯一堆栈跟踪的摘要及其发生的次数。
 
-profile is a CPU profiler, which takes samples of stack traces at timed intervals, and prints a summary of unique stack traces and a count of their occurrence.
+使用这个工具可以了解那些消耗CPU资源的代码路径。
 
-Use this tool to understand the code paths that are consuming CPU resources.
+更多例子请看 [examples](../tools/profile_example.txt).
 
-More [examples](../tools/profile_example.txt).
+### 2. 通用工具的可见性
 
-### 2. Observatility with Generic Tools
-
-In addition to the above tools for performance tuning, below is a checklist for bcc generic tools, first as a list, and in detail:
-
+除了以上工具用于性能调优之外，下面是一个bcc通用工具的清单，先列出来，再来详述：
 1. trace
 1. argdist
 1. funccount
 
-These generic tools may be useful to provide visibility to solve your specific problems.
+这些通用工具可能有助于提供可见性以解决你特定的问题。
 
 #### 2.1. trace
 
 ##### Example 1
 
-Suppose you want to track file ownership change. There are three syscalls, `chown`, `fchown` and `lchown` which users can use to change file ownership. The corresponding syscall entry is `SyS_[f|l]chown`.  The following command can be used to print out syscall parameters and the calling process user id. You can use `id` command to find the uid of a particular user.
+假设你想跟踪文件所有权的更改。有3个系统调用工具可用，`chown`, `fchown` 和 `lchown`这3个工具可以让用户用于更改文件的所有权。这些相应的系统调用入口是`SyS_[f|l]chown`。以下的命令可用于打印出系统调用的参数和正在调用的进程用户id。你可以使用 `id` 命令查找特定用户的 uid。
 
 ```
 $ trace.py \
