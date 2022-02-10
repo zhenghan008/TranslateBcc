@@ -6,11 +6,12 @@
 
 ## 可观察性
 
-This observability tutorial contains 17 lessons, and 46 enumerated things to learn.
+这个可观察性教程包含17个课程和46个列举出来的需要学习的地方。
 
-### Lesson 1. Hello World
 
-Start by running [examples/hello_world.py](../examples/hello_world.py), while running some commands (eg, "ls") in another session. It should print "Hello, World!" for new processes. If not, start by fixing bcc: see [INSTALL.md](../INSTALL.md).
+### 课程 1. Hello World
+
+开始运行 [examples/hello_world.py](../examples/hello_world.py)同时在另一个会话中运行相同的命令（例如，"ls"）。对于新的进程它应该打印出"Hello, World!"。如果没有，请先修复bcc：查看 [INSTALL.md](../INSTALL.md)。
 
 ```
 # ./examples/hello_world.py
