@@ -1,6 +1,6 @@
 # bcc 教程
 
-此教程涵盖了如何快速使用[bcc](https://github.com/iovisor/bcc) 工具集解决性能，故障排除和网络问题。 如果你想开发新的bcc工具, 可以查看 [tutorial_bcc_python_developer.md](tutorial_bcc_python_developer.md) 这个教程.
+此教程涵盖了如何快速使用[bcc](https://github.com/iovisor/bcc) 工具集解决性能，故障排除和网络问题。 如果你想开发新的bcc工具, 可以查看 [bcc_python开发者教程.md](bcc_python开发者教程.md) 这个教程.
 
 此教程假定你已经安装好bcc, 并且已成功运行如execsnoop这样的工具。 可以查看 [INSTALL.md](../INSTALL.md)。 这使用添加到Linux 4.x系列版本的增强功能.
 
