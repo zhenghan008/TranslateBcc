@@ -31,7 +31,7 @@ BPF(text='int kprobe__sys_clone(void *ctx) { bpf_trace_printk("Hello, World!\\n"
 
 1. ```text='...'```: 这是定义BPF内联程序的地方。这个程序是由C语言编写的。
 
-2. ```kprobe__sys_clone()```: 这是一个通过探针进行内核动态跟踪的捷径。如果C函数是以``kprobe__``开头，则其余部分被命名为要检测的内核函数，在这个例子中是```sys_clone()```。
+2. ```kprobe__sys_clone()```: 这是一个通过kprobes探针进行内核动态跟踪的捷径。如果C函数是以``kprobe__``开头，则其余部分被命名为要检测的内核函数，在这个例子中是```sys_clone()```。
 
 3. ```void *ctx```: ctx有参数，但是由于我们这里没有使用它们，所以只需将其转换为```void *```。
 
@@ -98,12 +98,12 @@ while 1:
 
 1. ```hello()```: 现在我们只是声明了一个C函数，用来代替那个```kprobe__```捷径。我们稍后会引用它。所有在BPF程序中声明的C函数都应该工作在探针上，因此它们都需要把```pt_reg* ctx```作为第一个参数。如果你需要定义一些不在探针上工作的帮助函数，它们需要被定义为```static inline```以便编译器内联。有时候你也需要为它添加```_always_inline```函数属性。
 
-1. ```b.attach_kprobe(event=b.get_syscall_fnname("clone"), fn_name="hello")```: 为内核克隆系统调用函数创建一个探针，这个探针将会执行我们定义的hello()函数。你可以不止一次调用attach_kprobe()，并且将你的C函数连接到多个内核函数。
+1. ```b.attach_kprobe(event=b.get_syscall_fnname("clone"), fn_name="hello")```: 为内核克隆系统调用函数创建一个kprobe探针，这个探针将会执行我们定义的hello()函数。你可以不止一次调用attach_kprobe()，并且将你的C函数附加到多个内核函数。
 
 1. ```b.trace_fields()```: 从trace_pipe返回一组固定的字段。类似于trace_print()，这有利于黑客攻击，因此在实际的工具中我们应该切换成BPF_PERF_OUTPUT()。
 
 
-### Lesson 4. sync_timing.py
+### 课程 4. sync_timing.py
 
 Remember the days of sysadmins typing ```sync``` three times on a slow console before ```reboot```, to give the first asynchronous sync time to complete? Then someone thought ```sync;sync;sync``` was clever, to run them all on one line, which became industry practice despite defeating the original purpose! And then sync became synchronous, so more reasons it was silly. Anyway.
 
