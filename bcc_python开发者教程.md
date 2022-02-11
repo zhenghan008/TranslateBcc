@@ -20,36 +20,39 @@
 [...]
 ```
 
-Here's the code for hello_world.py:
+这里是有关hello_world.py的代码：
 
 ```Python
 from bcc import BPF
 BPF(text='int kprobe__sys_clone(void *ctx) { bpf_trace_printk("Hello, World!\\n"); return 0; }').trace_print()
 ```
 
-There are six things to learn from this:
+这里有6个地方需要学习：
 
-1. ```text='...'```: This defines a BPF program inline. The program is written in C.
+1. ```text='...'```: 这是定义BPF内联程序的地方。这个程序是由C语言编写的。
 
-1. ```kprobe__sys_clone()```: This is a short-cut for kernel dynamic tracing via kprobes. If the C function begins with ``kprobe__``, the rest is treated as a kernel function name to instrument, in this case, ```sys_clone()```.
+2. ```kprobe__sys_clone()```: 这是一个通过kprobes进行内核动态跟踪的捷径。如果C函数是以``kprobe__``开头，则其余部分被命名为要检测的内核函数，在这个例子中是```sys_clone()```。
 
-1. ```void *ctx```: ctx has arguments, but since we aren't using them here, we'll just cast it to ```void *```.
+3. ```void *ctx```: ctx有参数，但是由于我们这里没有使用它们，所以只需将其转换为```void *```。
 
-1. ```bpf_trace_printk()```: A simple kernel facility for printf() to the common trace_pipe (/sys/kernel/debug/tracing/trace_pipe). This is ok for some quick examples, but has limitations: 3 args max, 1 %s only, and trace_pipe is globally shared, so concurrent programs will have clashing output. A better interface is via BPF_PERF_OUTPUT(), covered later.
+4. ```bpf_trace_printk()```:  一个简单的内核工具用于printf()到公共的trace_pipe(/sys/kernel/debug/tracing/trace_pipe)。对于一些快速的例子这是ok的，但是有局限性：最大3个参数，只有一个%s，并且trace_pipe是全局共享的，所以并发程序会有冲突的输出。一个更好的接口是通过BPF_PERF_OUTPUT()，稍后介绍。
 
-1. ```return 0;```: Necessary formality (if you want to know why, see [#139](https://github.com/iovisor/bcc/issues/139)).
+5. ```return 0;```: 必要的形式（如果你想知道为什么，看看 [#139](https://github.com/iovisor/bcc/issues/139)）。
 
-1. ```.trace_print()```: A bcc routine that reads trace_pipe and prints the output.
+6. ```.trace_print()```: 一个读取trace_pipe并且打印其输出的惯例。
 
-### Lesson 2. sys_sync()
 
-Write a program that traces the sys_sync() kernel function. Print "sys_sync() called" when it runs. Test by running ```sync``` in another session while tracing. The hello_world.py program has everything you need for this.
 
-Improve it by printing "Tracing sys_sync()... Ctrl-C to end." when the program first starts. Hint: it's just Python.
+### 课程 2. sys_sync()
 
-### Lesson 3. hello_fields.py
+编写一个追踪sys_sync()内核函数的程序。当它开始运行时打印"sys_sync() called"。通过在另外一个会话中运行```sync```进行测试同时追踪。hello_world.py程序有你所需的一切。
 
-This program is in [examples/tracing/hello_fields.py](../examples/tracing/hello_fields.py). Sample output (run commands in another session):
+当第一次启动这个程序时，通过打印"Tracing sys_sync()... Ctrl-C to end."来改进它。提示：它只是一个Python程序。
+
+### 课程 3. hello_fields.py
+
+这个程序在 [examples/tracing/hello_fields.py](../examples/tracing/hello_fields.py)中。样本输出（在另外一个会话运行命令）：
+
 
 ```
 # ./examples/tracing/hello_fields.py
@@ -60,7 +63,7 @@ TIME(s)            COMM             PID    MESSAGE
 24585002.276147000 bash             15787  Hello, World!
 ```
 
-Code:
+代码:
 
 ```Python
 from bcc import BPF
@@ -89,7 +92,8 @@ while 1:
     print("%-18.9f %-16s %-6d %s" % (ts, task, pid, msg))
 ```
 
-This is similar to hello_world.py, and traces new processes via sys_clone() again, but has a few more things to learn:
+这与hello_world.py类似，并且再次通过sys_clone()追踪新的进程，但是有几个地方需要学习：
+
 
 1. ```prog =```: This time we declare the C program as a variable, and later refer to it. This is useful if you want to add some string substitutions based on command line arguments.
 
