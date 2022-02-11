@@ -31,7 +31,7 @@ BPF(text='int kprobe__sys_clone(void *ctx) { bpf_trace_printk("Hello, World!\\n"
 
 1. ```text='...'```: 这是定义BPF内联程序的地方。这个程序是由C语言编写的。
 
-2. ```kprobe__sys_clone()```: 这是一个通过kprobes进行内核动态跟踪的捷径。如果C函数是以``kprobe__``开头，则其余部分被命名为要检测的内核函数，在这个例子中是```sys_clone()```。
+2. ```kprobe__sys_clone()```: 这是一个通过探针进行内核动态跟踪的捷径。如果C函数是以``kprobe__``开头，则其余部分被命名为要检测的内核函数，在这个例子中是```sys_clone()```。
 
 3. ```void *ctx```: ctx有参数，但是由于我们这里没有使用它们，所以只需将其转换为```void *```。
 
@@ -94,14 +94,14 @@ while 1:
 
 这与hello_world.py类似，并且再次通过sys_clone()追踪新的进程，但是有几个地方需要学习：
 
+1. ```prog =```: 这次我们把C程序声明为变量，并且在稍后引用它。如果你想根据命令行参数添加一些字符串替换这会很有用。
 
-1. ```prog =```: This time we declare the C program as a variable, and later refer to it. This is useful if you want to add some string substitutions based on command line arguments.
+1. ```hello()```: 现在我们只是声明了一个C函数，用来代替那个```kprobe__```捷径。我们稍后会引用它。所有在BPF程序中声明的C函数都应该工作在探针上，因此它们都需要把```pt_reg* ctx```作为第一个参数。如果你需要定义一些不在探针上工作的帮助函数，它们需要被定义为```static inline```以便编译器内联。有时候你也需要为它添加```_always_inline```函数属性。
 
-1. ```hello()```: Now we're just declaring a C function, instead of the ```kprobe__``` shortcut. We'll refer to this later. All C functions declared in the BPF program are expected to be executed on a probe, hence they all need to take a ```pt_reg* ctx``` as first argument. If you need to define some helper function that will not be executed on a probe, they need to be defined as ```static inline``` in order to be inlined by the compiler. Sometimes you would also need to add ```_always_inline``` function attribute to it.
+1. ```b.attach_kprobe(event=b.get_syscall_fnname("clone"), fn_name="hello")```: 为内核克隆系统调用函数创建一个探针，这个探针将会执行我们定义的hello()函数。你可以不止一次调用attach_kprobe()，并且将你的C函数连接到多个内核函数。
 
-1. ```b.attach_kprobe(event=b.get_syscall_fnname("clone"), fn_name="hello")```: Creates a kprobe for the kernel clone system call function, which will execute our defined hello() function. You can call attach_kprobe() more than once, and attach your C function to multiple kernel functions.
+1. ```b.trace_fields()```: 从trace_pipe返回一组固定的字段。类似于trace_print()，这有利于黑客攻击，因此在实际的工具中我们应该切换成BPF_PERF_OUTPUT()。
 
-1. ```b.trace_fields()```: Returns a fixed set of fields from trace_pipe. Similar to trace_print(), this is handy for hacking, but for real tooling we should switch to BPF_PERF_OUTPUT().
 
 ### Lesson 4. sync_timing.py
 
