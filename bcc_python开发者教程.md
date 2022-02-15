@@ -6,7 +6,7 @@
 
 ## 可观察性
 
-这个可观察性教程包含17个课程和46个列举出来的需要学习的地方。
+这个可观察性教程包含17个课程和46个列举出来的知识点。
 
 
 ### 课程 1. Hello World
@@ -27,7 +27,7 @@ from bcc import BPF
 BPF(text='int kprobe__sys_clone(void *ctx) { bpf_trace_printk("Hello, World!\\n"); return 0; }').trace_print()
 ```
 
-这里有6个地方需要学习：
+这里有6个知识点：
 
 1. ```text='...'```: 这是定义BPF内联程序的地方。这个程序是由C语言编写的。
 
@@ -92,7 +92,7 @@ while 1:
     print("%-18.9f %-16s %-6d %s" % (ts, task, pid, msg))
 ```
 
-这与hello_world.py类似，并且再次通过sys_clone()追踪新的进程，但是有几个地方需要学习：
+这与hello_world.py类似，并且再次通过sys_clone()追踪新的进程，但是有几个知识点：
 
 1. ```prog =```: 这次我们把C程序声明为变量，并且在稍后引用它。如果你想根据命令行参数添加一些字符串替换这会很有用。
 
