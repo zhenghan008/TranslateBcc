@@ -105,9 +105,10 @@ while 1:
 
 ### 课程 4. sync_timing.py
 
-Remember the days of sysadmins typing ```sync``` three times on a slow console before ```reboot```, to give the first asynchronous sync time to complete? Then someone thought ```sync;sync;sync``` was clever, to run them all on one line, which became industry practice despite defeating the original purpose! And then sync became synchronous, so more reasons it was silly. Anyway.
+还记得系统管理员在```reboot```前在一个慢速的控制台上连续键入3次```sync```的日子，以给第一个异步同步时间来完成吗？然后有些人认为```sync;sync;sync```是聪明的，把它们绑在一起去运行，尽管这不符合最初的目的，但已成为行业惯例！然后sync又变成同步的，所以更多的理由是这是愚蠢的。Anyway。
 
-The following example times how quickly the ```do_sync``` function is called, and prints output if it has been called more recently than one second ago. A ```sync;sync;sync``` will print output for the 2nd and 3rd sync's:
+下面的例子计算```do_sync```函数调用的速度，并打印输出如果它在一秒前被调用过。```sync;sync;sync```将打印第二和第三个sync的输出：
+
 
 ```
 # ./examples/tracing/sync_timing.py
@@ -116,7 +117,7 @@ At time 0.00 s: multiple syncs detected, last 95 ms ago
 At time 0.10 s: multiple syncs detected, last 96 ms ago
 ```
 
-This program is [examples/tracing/sync_timing.py](../examples/tracing/sync_timing.py):
+代码在 [examples/tracing/sync_timing.py](../examples/tracing/sync_timing.py):
 
 ```Python
 from __future__ import print_function
@@ -162,23 +163,31 @@ while 1:
     print("At time %.2f s: multiple syncs detected, last %s ms ago" % (ts, ms))
 ```
 
-Things to learn:
+知识点:
 
-1. ```bpf_ktime_get_ns()```: Returns the time as nanoseconds.
-1. ```BPF_HASH(last)```: Creates a BPF map object that is a hash (associative array), called "last". We didn't specify any further arguments, so it defaults to key and value types of u64.
-1. ```key = 0```: We'll only store one key/value pair in this hash, where the key is hardwired to zero.
-1. ```last.lookup(&key)```: Lookup the key in the hash, and return a pointer to its value if it exists, else NULL. We pass the key in as an address to a pointer.
-1. ```if (tsp != NULL) {```: The verifier requires that pointer values derived from a map lookup must be checked for a null value before they can be dereferenced and used.
-1. ```last.delete(&key)```: Delete the key from the hash. This is currently required because of [a kernel bug in `.update()`](https://git.kernel.org/cgit/linux/kernel/git/davem/net.git/commit/?id=a6ed3ea65d9868fdf9eff84e6fe4f666b8d14b02) (fixed in 4.8.10).
-1. ```last.update(&key, &ts)```: Associate the value in the 2nd argument to the key, overwriting any previous value. This records the timestamp.
+1. ```bpf_ktime_get_ns()```: 返回以纳秒为单位的时间。
 
-### Lesson 5. sync_count.py
+2. ```BPF_HASH(last)```: 创建一个哈希表（关联数组）的BPF映射对象，叫做"last"。我们没有进一步指定任何其它的参数，所以它默认是u64类型的键值对。
 
-Modify the sync_timing.py program (prior lesson) to store the count of all kernel sync system calls (both fast and slow), and print it with the output. This count can be recorded in the BPF program by adding a new key index to the existing hash.
+3. ```key = 0```: 我们只是在这个哈希表存储一对键值对，其中键被固定为0。
 
-### Lesson 6. disksnoop.py
+4. ```last.lookup(&key)```: 在哈希表中查找key，并且返回一个指向key的值的指针如果key的值是存在的，如果不存在就返回NULL。我们把key的地址传递给指针。
 
-Browse the [examples/tracing/disksnoop.py](../examples/tracing/disksnoop.py) program to see what is new. Here is some sample output:
+5. ```if (tsp != NULL) {```: 验证器要求必须检查从映射查找派生的指针值是否为空值，然后才能取消引用和使用它们。
+
+6. ```last.delete(&key)```: 从哈希表删除key。这是当前必须的由于 [a kernel bug in `.update()`](https://git.kernel.org/cgit/linux/kernel/git/davem/net.git/commit/?id=a6ed3ea65d9868fdf9eff84e6fe4f666b8d14b02) (在4.8.10修复。)。
+
+7. ```last.update(&key, &ts)```:  将第二个参数中的值与key关联起来，覆盖之前的值。这个有记录时间戳。
+
+
+### 课程 5. sync_count.py
+
+修改sync_timing.py（前一课）的程序以存储所有内核同步系统调用（快的和慢的）的计数，并且把输出都打印出来。这个计数可以通过在现有的哈希表中添加新的键索引来记录到BPF程序中。
+
+
+### 课程 6. disksnoop.py
+
+浏览 [examples/tracing/disksnoop.py](../examples/tracing/disksnoop.py) 程序以看看有什么新的变化。 这是一些样本输出:
 
 ```
 # ./disksnoop.py
@@ -190,7 +199,7 @@ TIME(s)            T  BYTES    LAT(ms)
 [...]
 ```
 
-And a code snippet:
+代码片段:
 
 ```Python
 [...]
@@ -229,18 +238,18 @@ b.attach_kprobe(event="blk_account_io_done", fn_name="trace_completion")
 [...]
 ```
 
-Things to learn:
+知识点:
 
-1. ```REQ_WRITE```: We're defining a kernel constant in the Python program because we'll use it there later. If we were using REQ_WRITE in the BPF program, it should just work (without needing to be defined) with the appropriate #includes.
-1. ```trace_start(struct pt_regs *ctx, struct request *req)```: This function will later be attached to kprobes. The arguments to kprobe functions are ```struct pt_regs *ctx```, for registers and BPF context, and then the actual arguments to the function. We'll attach this to blk_start_request(), where the first argument is ```struct request *```.
-1. ```start.update(&req, &ts)```: We're using the pointer to the request struct as a key in our hash. What? This is commonplace in tracing. Pointers to structs turn out to be great keys, as they are unique: two structs can't have the same pointer address. (Just be careful about when it gets free'd and reused.) So what we're really doing is tagging the request struct, which describes the disk I/O, with our own timestamp, so that we can time it. There's two common keys used for storing timestamps: pointers to structs, and, thread IDs (for timing function entry to return).
-1. ```req->__data_len```: We're dereferencing members of ```struct request```. See its definition in the kernel source for what members are there. bcc actually rewrites these expressions to be a series of ```bpf_probe_read_kernel()``` calls. Sometimes bcc can't handle a complex dereference, and you need to call ```bpf_probe_read_kernel()``` directly.
+1. ```REQ_WRITE```: 我们要在Python程序中定义一个内核常量因为稍后要使用它。如果我们已经在BPF程序中使用REQ_WRITE，那它应该在适当的#includes下工作（无需定义）。
+1. ```trace_start(struct pt_regs *ctx, struct request *req)```: 这个函数稍后会附加到kprobes探针。kprobe函数的参数是```struct pt_regs *ctx```，用于寄存器和BPF上下文，然后是函数的实际参数。我们将会把它附加于blk_start_request()，其中第一个参数是```struct request *```。
+1. ```start.update(&req, &ts)```: 我们将会使用一个指向请求体的指针作为我们哈希表中的一个键。什么？这在追踪中很常见。指向结构体的指针可以作为很好的键，因为它们是唯一的：两个结构体不能拥有相同的指针地址。（只是要小心当它可以自由的获取和重复使用。）所以我们真正要做的是用自己的时间戳来标记描述磁盘I/O的请求体，以便我们对它计时。有两个常见的键用于存储时间戳：一个是指向结构体的指针一个是线程的ID（用于返回计时函数条目）。
+1. ```req->__data_len```: 我们将会解引用```struct request```的成员。在内核源代码中看看它们的定义以了解其中的成员。bcc实际上把这些表达式重写为一系列```bpf_probe_read_kernel()```调用。有时候bcc无法处理复杂的解引用，需要直接调用```bpf_probe_read_kernel()```。
 
-This is a pretty interesting program, and if you can understand all the code, you'll understand many important basics. We're still using the bpf_trace_printk() hack, so let's fix that next.
+这是一个优雅有趣的程序，如果你明白所有的代码，你将会了解许多重要的基础知识。我们仍是使用bpf_trace_printk()来hack，所以让我们接下来修复它。
 
-### Lesson 7. hello_perf_output.py
+### 课程 7. hello_perf_output.py
 
-Let's finally stop using bpf_trace_printk() and use the proper BPF_PERF_OUTPUT() interface. This will also mean we stop getting the free trace_field() members like PID and timestamp, and will need to fetch them directly. Sample output while commands are run in another session:
+让我们最终停止使用bpf_trace_printk()并且使用更加恰当的BPF_PERF_OUTPUT()接口。这也意味着我们将停止自由地获取trace_field()的成员如PID和时间戳，并且需要直接获取它们。当在另一个会话中运行命令时的输出示例：
 
 ```
 # ./hello_perf_output.py
@@ -252,7 +261,7 @@ TIME(s)            COMM             PID    MESSAGE
 [...]
 ```
 
-Code is [examples/tracing/hello_perf_output.py](../examples/tracing/hello_perf_output.py):
+代码在 [examples/tracing/hello_perf_output.py](../examples/tracing/hello_perf_output.py):
 
 ```Python
 from bcc import BPF
@@ -306,26 +315,29 @@ while 1:
     b.perf_buffer_poll()
 ```
 
-Things to learn:
+知识点:
 
-1. ```struct data_t```: This defines the C struct we'll use to pass data from kernel to user space.
-1. ```BPF_PERF_OUTPUT(events)```: This names our output channel "events".
-1. ```struct data_t data = {};```: Create an empty data_t struct that we'll then populate.
-1. ```bpf_get_current_pid_tgid()```: Returns the process ID in the lower 32 bits (kernel's view of the PID, which in user space is usually presented as the thread ID), and the thread group ID in the upper 32 bits (what user space often thinks of as the PID). By directly setting this to a u32, we discard the upper 32 bits. Should you be presenting the PID or the TGID? For a multi-threaded app, the TGID will be the same, so you need the PID to differentiate them, if that's what you want. It's also a question of expectations for the end user.
-1. ```bpf_get_current_comm()```: Populates the first argument address with the current process name.
-1. ```events.perf_submit()```: Submit the event for user space to read via a perf ring buffer.
-1. ```def print_event()```: Define a Python function that will handle reading events from the ```events``` stream.
-1. ```b["events"].event(data)```: Now get the event as a Python object, auto-generated from the C declaration.
-1. ```b["events"].open_perf_buffer(print_event)```: Associate the Python ```print_event``` function with the ```events``` stream.
-1. ```while 1: b.perf_buffer_poll()```: Block waiting for events.
+1. ```struct data_t```: 这定义了一个C结构体用于从内核空间传递数据到用户空间。
+1. ```BPF_PERF_OUTPUT(events)```: 这将我们的输出通道命名为"events"。
+1. ```struct data_t data = {};```: 创建一个空的data_t结构体，然后我们将会填充它。
+1. ```bpf_get_current_pid_tgid()```: 返回低32位的进程ID（PID的内核视图，其在用户空间中通常呈现为线程ID），并且线程组ID在高32位中（用户空间通常认为的PID）。通过直接将其设置为u32，我们丢弃了高32位。你应该提供PID或者TGID？对于多线程app来说，那个TGID是一样的，因此你需要PID来区分它们，如果那是你想要的。它对于最终用户来说也是一个期望的问题。
+1. ```bpf_get_current_comm()```: 使用当前的进程名填充第一个参数地址。
+1. ```events.perf_submit()```: 提交用户空间通过perf环形缓冲区读取的事件。
+1. ```def print_event()```: 定义一个Python函数，这个函数将处理从```events```流中读取事件。
+1. ```b["events"].event(data)```: 现在获取事件作为一个Python对象，从C声明中自动生成。
+1. ```b["events"].open_perf_buffer(print_event)```: 把```print_event```Python函数与```events```流关联起来。
+1. ```while 1: b.perf_buffer_poll()```: 阻塞等待事件。
 
-### Lesson 8. sync_perf_output.py
 
-Rewrite sync_timing.py, from a prior lesson, to use ```BPF_PERF_OUTPUT```.
+### 课程 8. sync_perf_output.py
 
-### Lesson 9. bitehist.py
+使用```BPF_PERF_OUTPUT```重写前一课的sync_timing.py。
 
-The following tool records a histogram of disk I/O sizes. Sample output:
+
+### 课程 9. bitehist.py
+
+下面的工具记录了磁盘I/O大小的直方图。示例输出：
+
 
 ```
 # ./bitehist.py
@@ -342,7 +354,7 @@ Tracing... Hit Ctrl-C to end.
      128 -> 255      : 800      |**************************************|
 ```
 
-Code is [examples/tracing/bitehist.py](../examples/tracing/bitehist.py):
+代码在 [examples/tracing/bitehist.py](../examples/tracing/bitehist.py):
 
 ```Python
 from __future__ import print_function
@@ -376,18 +388,18 @@ except KeyboardInterrupt:
 b["dist"].print_log2_hist("kbytes")
 ```
 
-A recap from earlier lessons:
+回顾早先的课程：
 
-- ```kprobe__```: This prefix means the rest will be treated as a kernel function name that will be instrumented using kprobe.
-- ```struct pt_regs *ctx, struct request *req```: Arguments to kprobe. The ```ctx``` is registers and BPF context, the ```req``` is the first argument to the instrumented function: ```blk_account_io_done()```.
-- ```req->__data_len```: Dereferencing that member.
+- ```kprobe__```: 这个前缀意味着剩余的部分是被视为使用kprobe探针检测的内核函数名称。
+- ```struct pt_regs *ctx, struct request *req```: kprobe探针的参数。```ctx```是寄存器和BPF上下文，```req```是检测函数```blk_account_io_done()```的第一个参数。
+- ```req->__data_len```: 解引用成员.
 
-New things to learn:
+新的知识点:
+1. ```BPF_HISTOGRAM(dist)```: 定义一个BPF映射对象，这个对象是一个直方图，命名为"dist"。
+1. ```dist.increment()```: 默认情况下，将作为第一个参数提供的直方图存储桶索引递增一个。或者，自定义增量可以作为第二个参数传递。
+1. ```bpf_log2l()```: 返回提供的值的log-2。这变成我们直方图的索引，以便我们构造一个power-of-2直方图。
+1. ```b["dist"].print_log2_hist("kbytes")```: 打印出"dist"的power-of-2直方图，以"kbytes"为列标题。从内核空间传输到用户空间的唯一数据是桶计数，这很高效。
 
-1. ```BPF_HISTOGRAM(dist)```: Defines a BPF map object that is a histogram, and names it "dist".
-1. ```dist.increment()```: Increments the histogram bucket index provided as first argument by one by default. Optionally, custom increments can be passed as the second argument.
-1. ```bpf_log2l()```: Returns the log-2 of the provided value. This becomes the index of our histogram, so that we're constructing a power-of-2 histogram.
-1. ```b["dist"].print_log2_hist("kbytes")```: Prints the "dist" histogram as power-of-2, with a column header of "kbytes". The only data transferred from kernel to user space is the bucket counts, making this efficient.
 
 ### Lesson 10. disklatency.py
 
