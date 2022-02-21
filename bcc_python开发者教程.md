@@ -320,7 +320,7 @@ while 1:
 1. ```struct data_t```: 这定义了一个C结构体用于从内核空间传递数据到用户空间。
 1. ```BPF_PERF_OUTPUT(events)```: 这将我们的输出通道命名为"events"。
 1. ```struct data_t data = {};```: 创建一个空的data_t结构体，然后我们将会填充它。
-1. ```bpf_get_current_pid_tgid()```: 返回低32位的进程ID（PID的内核视图，其在用户空间中通常呈现为线程ID），并且线程组ID在高32位中（用户空间通常认为的PID）。通过直接将其设置为u32，我们丢弃了高32位。你应该提供PID或者TGID？对于多线程app来说，那个TGID是一样的，因此你需要PID来区分它们，如果那是你想要的。它对于最终用户来说也是一个期望的问题。
+1. ```bpf_get_current_pid_tgid()```: 返回低32位的进程ID（PID的内核视图，其在用户空间中通常呈现为线程ID），并且线程组ID在高32位中（用户空间通常认为的PID）。通过直接将其设置为u32，我们丢弃了高32位。你应该提供PID或者TGID？对于多线程app来说，那个TGID是一样的，因此你需要PID来区分它们，如果那是你想要的。它对于最终用户来说也是一样的问题。
 1. ```bpf_get_current_comm()```: 使用当前的进程名填充第一个参数地址。
 1. ```events.perf_submit()```: 提交用户空间通过perf环形缓冲区读取的事件。
 1. ```def print_event()```: 定义一个Python函数，这个函数将处理从```events```流中读取事件。
@@ -401,13 +401,14 @@ b["dist"].print_log2_hist("kbytes")
 1. ```b["dist"].print_log2_hist("kbytes")```: 打印出"dist"的power-of-2直方图，以"kbytes"为列标题。从内核空间传输到用户空间的唯一数据是桶计数，这很高效。
 
 
-### Lesson 10. disklatency.py
+### 课程 10. disklatency.py
 
-Write a program that times disk I/O, and prints a histogram of their latency. Disk I/O instrumentation and timing can be found in the disksnoop.py program from a prior lesson, and histogram code can be found in bitehist.py from a prior lesson.
+编写一个计时磁盘I/O的程序，并打印出其延迟的直方图。磁盘I/O的检测和计时代码可以在上一课的disksnoop.py程序中找到，直方图代码可以在上一课的bitehist.py程序中找到。
 
-### Lesson 11. vfsreadlat.py
 
-This example is split into separate Python and C files. Example output:
+### 课程 11. vfsreadlat.py
+
+此示例是把Python文件和C文件分割开来的。示例输出：
 
 ```
 # ./vfsreadlat.py 1
@@ -446,16 +447,17 @@ Tracing... Hit Ctrl-C to end.
         32 -> 63         : 2        |*******                                 |
 [...]
 ```
+在 [examples/tracing/vfsreadlat.py](../examples/tracing/vfsreadlat.py)和[examples/tracing/vfsreadlat.c](../examples/tracing/vfsreadlat.c)中浏览代码。
+ 知识点:
 
-Browse the code in [examples/tracing/vfsreadlat.py](../examples/tracing/vfsreadlat.py) and [examples/tracing/vfsreadlat.c](../examples/tracing/vfsreadlat.c). Things to learn:
+1. ```b = BPF(src_file = "vfsreadlat.c")```: 从单独的源代码文件中读取BPF C 程序。
+1. ```b.attach_kretprobe(event="vfs_read", fn_name="do_return")```: 把BPF C 函数```do_return()```附加到内核函数```vfs_read()```的返回中。这是一个kretprobe探针：从一个函数检测其返回，而不是它们的入口。
+1. ```b["dist"].clear()```: 清除直方图。
 
-1. ```b = BPF(src_file = "vfsreadlat.c")```: Read the BPF C program from a separate source file.
-1. ```b.attach_kretprobe(event="vfs_read", fn_name="do_return")```: Attaches the BPF C function ```do_return()``` to the return of the kernel function ```vfs_read()```. This is a kretprobe: instrumenting the return from a function, rather than its entry.
-1. ```b["dist"].clear()```: Clears the histogram.
 
-### Lesson 12. urandomread.py
+### 课程 12. urandomread.py
 
-Tracing while a ```dd if=/dev/urandom of=/dev/null bs=8k count=5``` is run:
+追踪```dd if=/dev/urandom of=/dev/null bs=8k count=5```的运行：
 
 ```
 # ./urandomread.py
@@ -468,7 +470,8 @@ TIME(s)            COMM             PID    GOTBITS
 24652837.728888001 dd               24692  65536
 ```
 
-Hah! I caught smtp by accident. Code is [examples/tracing/urandomread.py](../examples/tracing/urandomread.py):
+哈！我意外地捕抓到了smtp。代码在 [examples/tracing/urandomread.py](../examples/tracing/urandomread.py):
+
 
 ```Python
 from __future__ import print_function
@@ -495,10 +498,10 @@ while 1:
     print("%-18.9f %-16s %-6d %s" % (ts, task, pid, msg))
 ```
 
-Things to learn:
+知识点:
 
-1. ```TRACEPOINT_PROBE(random, urandom_read)```: Instrument the kernel tracepoint ```random:urandom_read```. These have a stable API, and thus are recommend to use instead of kprobes, wherever possible. You can run ```perf list``` for a list of tracepoints. Linux >= 4.7 is required to attach BPF programs to tracepoints.
-1. ```args->got_bits```: ```args``` is auto-populated to be a structure of the tracepoint arguments. The comment above says where you can see that structure. Eg:
+1. ```TRACEPOINT_PROBE(random, urandom_read)```: 检测内核追踪点```random:urandom_read```。这是一个稳定的API，因此建议尽可能使用它代替kprobes探针。你可以运行```perf list```以获取追踪点列表。Linux >= 4.7需要将BPF程序附加到追踪点。
+1. ```args->got_bits```:  ```args```被自动填充为一个追踪点参数的结构体。上面那个注释是说你可以在哪里看到这个结构体。例如：
 
 ```
 # cat /sys/kernel/debug/tracing/events/random/urandom_read/format
@@ -517,15 +520,16 @@ format:
 print fmt: "got_bits %d nonblocking_pool_entropy_left %d input_entropy_left %d", REC->got_bits, REC->pool_left, REC->input_left
 ```
 
-In this case, we were printing the ```got_bits``` member.
+在这个例子中，我们是打印出```got_bits```成员。
 
-### Lesson 13. disksnoop.py fixed
 
-Convert disksnoop.py from a previous lesson to use the ```block:block_rq_issue``` and ```block:block_rq_complete``` tracepoints.
+### 课程 13. disksnoop.py fixed
 
-### Lesson 14. strlen_count.py
+使用```block:block_rq_issue``` 和 ```block:block_rq_complete``` 跟踪点改造上一课的disksnoop.py程序。
 
-This program instruments a user-level function, the ```strlen()``` library function, and frequency counts its string argument. Example output:
+### 课程 14. strlen_count.py
+
+这个程序检测一个用户级函数```strlen()``` 库函数，并且计算它的字符串参数的频率。示例输出：
 
 ```
 # ./strlen_count.py
@@ -549,9 +553,9 @@ Tracing strlen()... Hit Ctrl-C to end.
        340 "\x01\x1b]0;root@bgregg-test: ~\x07\x02root@bgregg-test:~# "
 ```
 
-These are various strings that are being processed by this library function while tracing, along with their frequency counts. ```strlen()``` was called on "LC_ALL" 12 times, for example.
+这些是通过追踪此库函数时正在处理的各种字符串以及它们的频率计数。举例，```strlen()```在 "LC_ALL" 上被调用了12次。
 
-Code is [examples/tracing/strlen_count.py](../examples/tracing/strlen_count.py):
+代码在 [examples/tracing/strlen_count.py](../examples/tracing/strlen_count.py):
 
 ```Python
 from __future__ import print_function
@@ -601,14 +605,15 @@ for k, v in sorted(counts.items(), key=lambda counts: counts[1].value):
     print("%10d \"%s\"" % (v.value, k.c.encode('string-escape')))
 ```
 
-Things to learn:
+知识点:
 
-1. ```PT_REGS_PARM1(ctx)```: This fetches the first argument to ```strlen()```, which is the string.
-1. ```b.attach_uprobe(name="c", sym="strlen", fn_name="count")```: Attach to library "c" (if this is the main program, use its pathname), instrument the user-level function ```strlen()```, and on execution call our C function ```count()```.
+1. ```PT_REGS_PARM1(ctx)```: 这会获取```strlen()```的第一个参数，它是字符串。
+1. ```b.attach_uprobe(name="c", sym="strlen", fn_name="count")```: 附加到"c"库中（如果这是主程序，使用它的路径名），检测用户级别的函数```strlen()```，并且在执行时调用我们的C函数```count()```。
 
-### Lesson 15. nodejs_http_server.py
 
-This program instruments a user statically-defined tracing (USDT) probe, which is the user-level version of a kernel tracepoint. Sample output:
+### 课程 15. nodejs_http_server.py
+
+这个程序检测一个用户静态定义的追踪(USDT)探针，它是内核追踪点的用户级版本。示例输出：
 
 ```
 # ./nodejs_http_server.py 24728
@@ -618,7 +623,7 @@ TIME(s)            COMM             PID    ARGS
 24653340.510164998 node             24728  path:/images/favicon.png
 ```
 
-Relevant code from [examples/tracing/nodejs_http_server.py](../examples/tracing/nodejs_http_server.py):
+相关代码在 [examples/tracing/nodejs_http_server.py](../examples/tracing/nodejs_http_server.py):
 
 ```Python
 from __future__ import print_function
@@ -655,29 +660,22 @@ if debug:
 b = BPF(text=bpf_text, usdt_contexts=[u])
 ```
 
-Things to learn:
+知识点:
 
-1. ```bpf_usdt_readarg(6, ctx, &addr)```: Read the address of argument 6 from the USDT probe into ```addr```.
-1. ```bpf_probe_read_user(&path, sizeof(path), (void *)addr)```: Now the string ```addr``` points to into our ```path``` variable.
-1. ```u = USDT(pid=int(pid))```: Initialize USDT tracing for the given PID.
-1. ```u.enable_probe(probe="http__server__request", fn_name="do_trace")```: Attach our ```do_trace()``` BPF C function to the Node.js ```http__server__request``` USDT probe.
-1. ```b = BPF(text=bpf_text, usdt_contexts=[u])```: Need to pass in our USDT object, ```u```, to BPF object creation.
+1. ```bpf_usdt_readarg(6, ctx, &addr)```: 将USDT探针参数6的地址读入到```addr```中。
+1. ```bpf_probe_read_user(&path, sizeof(path), (void *)addr)```: 现在将字符串```addr```指向我们的```path```变量。
+1. ```u = USDT(pid=int(pid))```: 为给定的PID初始化USDT追踪。
+1. ```u.enable_probe(probe="http__server__request", fn_name="do_trace")```: 将我们的```do_trace()```BPF C 函数附加到Node.js ```http__server__request``` USDT 探针中。
+1. ```b = BPF(text=bpf_text, usdt_contexts=[u])```: 需要传入我们的USDT对象```u```来创建BPF对象。
 
-### Lesson 16. task_switch.c
 
-This is an older tutorial included as a bonus lesson. Use this for recap and to reinforce what you've already learned.
+### 课程 16. task_switch.c
 
-This is a slightly more complex tracing example than Hello World. This program
-will be invoked for every task change in the kernel, and record in a BPF map
-the new and old pids.
+这是作为一个奖励的课程包含了一个较旧的教程。使用这个课程去回顾和加强你已经学到的。
 
-The C program below introduces a new concept: the prev argument. This
-argument is treated specially by the BCC frontend, such that accesses
-to this variable are read from the saved context that is passed by the
-kprobe infrastructure. The prototype of the args starting from
-position 1 should match the prototype of the kernel function being
-kprobed. If done so, the program will have seamless access to the
-function parameters.
+这是一个比Hello World稍微复杂一点的追踪例子。这个程序在每个内核任务改变时将被调用，并且把新旧pids记录到BPF映射中。
+
+下面的C程序引入了一个新概念：prev参数。这是通过BCC前端特殊处理过的参数，以便从 kprobe 基础结构传递的已保存上下文中读取对该变量的访问。从位置 1 开始的 args 原型应该与被 kprobed 的内核函数的原型相匹配。如果已经这样做，程序将会无缝访问函数参数。
 
 ```c
 #include <uapi/linux/ptrace.h>
@@ -705,12 +703,9 @@ int count_sched(struct pt_regs *ctx, struct task_struct *prev) {
 }
 ```
 
-The userspace component loads the file shown above, and attaches it to the
-`finish_task_switch` kernel function.
-The `[]` operator of the BPF object gives access to each BPF_HASH in the
-program, allowing pass-through access to the values residing in the kernel. Use
-the object as you would any other python dict object: read, update, and deletes
-are all allowed.
+用户空间组件加载上面显示的文件，并将它附加到`finish_task_switch`内核函数中。
+BPF对象的`[]`操作符允许访问程序中每个BPF_HASH，允许通过访问驻留在内核中的值。 像你使用其它任何python dict对象一样使用它：read, update, 和 deletes都是被允许的。
+
 ```python
 from bcc import BPF
 from time import sleep
@@ -725,14 +720,15 @@ for k, v in b["stats"].items():
     print("task_switch[%5d->%5d]=%u" % (k.prev_pid, k.curr_pid, v.value))
 ```
 
-These programs can be found in the files [examples/tracing/task_switch.c](../examples/tracing/task_switch.c) and [examples/tracing/task_switch.py](../examples/tracing/task_switch.py) respectively.
+这些程序可以分别在[examples/tracing/task_switch.c](../examples/tracing/task_switch.c) 和 [examples/tracing/task_switch.py](../examples/tracing/task_switch.py) 中找到。
 
-### Lesson 17. Further Study
 
-For further study, see Sasha Goldshtein's [linux-tracing-workshop](https://github.com/goldshtn/linux-tracing-workshop), which contains additional labs. There are also many tools in bcc /tools to study.
+### 课程 17. 更进一步的研究
 
-Please read [CONTRIBUTING-SCRIPTS.md](../CONTRIBUTING-SCRIPTS.md) if you wish to contribute tools to bcc. At the bottom of the main [README.md](../README.md), you'll also find methods for contacting us. Good luck, and happy tracing!
+对于更进一步的研究，可以看看Sasha Goldshtein的 [linux-tracing-workshop](https://github.com/goldshtn/linux-tracing-workshop)，其中包含了额外的试验。在bcc的 /tools里面的很多工具也可以用于学习。
+
+请阅读[CONTRIBUTING-SCRIPTS.md](../CONTRIBUTING-SCRIPTS.md)如果你希望为bcc贡献工具集。在主[README.md](../README.md)底部，你还可以找到联系我们的方法。祝你好运，tracing愉快！
 
 ## Networking
 
-To do.
+待续.
