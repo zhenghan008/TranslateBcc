@@ -4,9 +4,9 @@
 
 也可以查看bcc开发者的参考指南 [reference_guide.md](reference_guide.md)和面向最终用户的工具教程 [tutorial.md](tutorial.md)。bcc也有lua接口。
 
-## 可观察性
+## 可观察性追踪
 
-这个可观察性教程包含17个课程和46个列举出来的知识点。
+这个可观察性追踪教程包含17个课程和46个列举出来的知识点。
 
 
 ### 课程 1. Hello World
@@ -729,6 +729,6 @@ for k, v in b["stats"].items():
 
 请阅读[CONTRIBUTING-SCRIPTS.md](../CONTRIBUTING-SCRIPTS.md)如果你希望为bcc贡献工具集。在主[README.md](../README.md)底部，你还可以找到联系我们的方法。祝你好运，tracing愉快！
 
-## Networking
+## 网络追踪
 
 待续.
