@@ -2,7 +2,7 @@
 
 这个教程是关于使用Python接口开发 [bcc](https://github.com/iovisor/bcc) 工具集和程序。有两个部分：可观察性追踪与网络追踪。代码片段都是来自bcc里的各种程序：查看它们的文件以获取许可证。
 
-也可以查看bcc开发者的参考指南 [reference_guide.md](reference_guide.md)和面向最终用户的工具教程 [tutorial.md](tutorial.md)。bcc也有lua接口。
+也可以查看bcc开发者的参考指南 [reference_guide.md](reference_guide.md)和面向最终用户的工具教程 [tutorial.md](./bcc教程.md)。bcc也有lua接口。
 
 ## 可观察性追踪
 
